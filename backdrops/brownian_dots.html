@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+  <title>Brownian Dots</title>
+  <style>
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+  </style>
+</head>
+<body>
+
+<script>
+  const WIDTH=1600
+  const HEIGHT=900
+  const CUBE_SIZE=200
+  const DOT_SIZE=20
+  const DOT_SIZE_DELTA=40
+  const DOT_COUNT=500
+  function setup() {
+    createCanvas(WIDTH, HEIGHT)
+  }
+
+  class Dot {
+    constructor() {
+      this.x = Math.floor(Math.random()*WIDTH)
+      this.y = Math.floor(Math.random()*HEIGHT)
+      this.bias_x = (Math.floor(Math.random()*2)*2 - 1)/5
+      this.bias_y = (Math.floor(Math.random()*2)*2 - 1)/5
+      this.max_age = 255 + Math.floor(Math.random()*256)
+      this.size = DOT_SIZE + Math.floor(Math.random()*DOT_SIZE_DELTA)
+      this.r = (175-75) + Math.floor(Math.random()*75)
+      this.g = (175-75) + Math.floor(Math.random()*75)
+      this.b = (175-75) + Math.floor(Math.random()*75)
+      this.age = 0
+    }
+
+    move() {
+      this.x += this.bias_x + (Math.floor(Math.random() * 2) * 2 - 1)/5
+      this.y += this.bias_y + (Math.floor(Math.random() * 2) * 2 - 1)/5
+      this.age += 1
+      return !(this.x < -this.size || this.x >= WIDTH + this.size || this.y < -this.size || this.y >= HEIGHT + this.size || this.age > this.max_age)
+    }
+
+    draw() {
+      stroke(this.r, this.g, this.b,
+        Math.min(this.age, Math.min(this.max_age - this.age, 255))
+      )
+      strokeWeight(this.size)
+      point(this.x, this.y)
+    }
+  }
+  let dots = []
+  for (let i = 0; i < DOT_COUNT; ++i) {
+    dots.push(new Dot())
+  }
+
+  function draw() {
+    // Set background color
+    background(0);
+
+    // Calculate a color based on time
+    let r = sin(frameCount * 0.003) * 127 + 128;
+    let g = sin(frameCount * 0.005) * 127 + 128;
+    let b = sin(frameCount * 0.007) * 127 + 128;
+
+    push()
+    dots = dots.filter(dot => dot.move())
+    while (dots.length < DOT_COUNT) {
+      dots.push(new Dot())
+    }
+    for (const dot of dots) {
+      dot.draw()
+    }
+    pop()
+  }
+</script>
+
+</body>
+</html>
