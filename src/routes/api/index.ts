@@ -1,6 +1,14 @@
-import { Application, Request, Response, NextFunction } from 'express'
+import {
+  Application,
+  NextFunction,
+  Request,
+  Response,
+} from 'express'
+import { DatabaseAsyncAwait } from '../../db'
 
-export default function setUpApi(app: Application) {
+// TODO - add auto catch and next(err) capabilities to endpoints
+
+export default function setUpApi(app: Application, db: DatabaseAsyncAwait) {
   // Useful things you might want:
   //app.use('/api', express.urlencoded({ extended: true }))
 
@@ -8,9 +16,13 @@ export default function setUpApi(app: Application) {
     res.send({ message: 'Pong.' })
   })
 
-  app.get('/api/test/sqlite3', async (_req, _res) => {
-    console.log('TODO - implement sqlite3 test')
-    // TODO - Implement sqlite3 test
+  app.get('/api/test/sqlite3', async (_req, res, next) => {
+    try {
+      const result: {value: number}[] = await db.all_async("SELECT 1 AS value")
+      res.send({ result })
+    } catch (err) {
+      next(err)
+    }
   })
 
   // 2nd to last handler!
