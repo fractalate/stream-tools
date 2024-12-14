@@ -10,6 +10,10 @@ To install client dependencies for development, run `npm install .` in the `/cli
 
 You can start the client and server in development mode with the command `npm run dev-client-server` which is the intended mode of operation. It is possible to build and deploy backends separately if needed.
 
+### Chores
+
+* For the frontend, just redo all the dependencies and do similar in my template projects too (eslint version required peer dependencies has vulnerabilities).
+
 ## Building
 
 * TODO - Building server

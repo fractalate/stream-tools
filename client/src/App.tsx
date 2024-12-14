@@ -1,5 +1,19 @@
 import { useEffect } from 'react'
+import { RouterProvider, createBrowserRouter } from 'react-router'
 import { io } from 'socket.io-client'
+import WelcomePage from './components/welcome/WelcomePage'
+import TickerOverlayPage from './components/ticker/TickerOverlayPage'
+
+const router = createBrowserRouter([
+  {
+    path: "/",
+    element: <WelcomePage />,
+  },
+  {
+    path: "/overlay/ticker",
+    element: <TickerOverlayPage />,
+  },
+]);
 
 export default function App() {
   useEffect(() => {
@@ -25,11 +39,11 @@ export default function App() {
       const data = await req.json()
       console.log('response from /api/test/ping:', data)
     })
-    fetch('/api/test/pg', { method: 'GET' }).then(async (req) => {
+    fetch('/api/test/sqlite3', { method: 'GET' }).then(async (req) => {
       const data = await req.json()
-      console.log('response from /api/test/pg:', data)
+      console.log('response from /api/test/sqlite3:', data)
     })
   }, [])
 
-  return <div>Welcome to the app!</div>
+  return <RouterProvider router={router} />
 }
