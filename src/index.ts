@@ -5,6 +5,7 @@ import { createServer } from 'http'
 import setUpDatabase from './db'
 import setUpApi from './routes/api'
 import setUpSocket from './socket'
+import { TwitchChatBot } from './chat'
 
 dotenv.config()
 
@@ -24,6 +25,11 @@ const LISTEN_PORT = getListenPort('LISTEN_PORT', 3000)
 const LISTEN_HOST = process.env.LISTEN_HOST || '127.0.0.1'
 const VITE_DEV_PORT = getListenPort('VITE_DEV_PORT', 9999)
 
+const TWITCH_CHAT_BOT_OAUTH_TOKEN = process.env.TWITCH_CHAT_BOT_OAUTH_TOKEN || ''
+const TWITCH_CHAT_BOT_CLIENT_ID = process.env.TWITCH_CHAT_BOT_CLIENT_ID || ''
+const TWITCH_CHAT_BOT_CHANNEL_OWNER_ID = process.env.TWITCH_CHAT_BOT_CHANNEL_OWNER_ID || ''
+const TWITCH_CHAT_BOT_USER_ID = process.env.TWITCH_CHAT_BOT_USER_ID || ''
+
 async function main() {
   const app = express()
   const server = createServer(app)
@@ -31,6 +37,20 @@ async function main() {
   const db = await setUpDatabase()
   setUpSocket(server, db)
   setUpApi(app, db)
+
+  if (TWITCH_CHAT_BOT_OAUTH_TOKEN && TWITCH_CHAT_BOT_CLIENT_ID && TWITCH_CHAT_BOT_CHANNEL_OWNER_ID && TWITCH_CHAT_BOT_USER_ID) {
+    console.log('Starting chat bot...')
+    const bot = new TwitchChatBot({
+      db: db,
+      oauthToken: TWITCH_CHAT_BOT_OAUTH_TOKEN,
+      clientID: TWITCH_CHAT_BOT_CLIENT_ID,
+      channelOwnerUserID: TWITCH_CHAT_BOT_CHANNEL_OWNER_ID,
+      botUserID: TWITCH_CHAT_BOT_USER_ID,
+    })
+    bot.start()
+  } else {
+    console.log('Not starting chat bot. Environment variables are missing.')
+  }
   
   // Proxy web requests to the Vite dev server.
   if (process.env.DEV_CLIENT_SERVER) {

@@ -2,3 +2,7 @@
 dist/
 node_modules/
 
+# The stream database these tools maintain.
+/stream.db
+# A place for private notes.
+/Private.md
