@@ -9,8 +9,9 @@ export class TwitchChatBot {
   private clientID: string
   private channelOwnerUserID: string
   private botUserID: string
-  private websocketSessionID: null | string
   private websocketClient: null | WebSocket
+  private websocketSessionID: null | string
+  private running: boolean
 
   constructor({db, oauthToken, clientID, channelOwnerUserID, botUserID} : {db: DatabaseAsyncAwait, oauthToken: string, clientID: string, channelOwnerUserID: string, botUserID: string}) {
     this.db = db
@@ -20,13 +21,48 @@ export class TwitchChatBot {
     this.botUserID = botUserID
     this.websocketSessionID = null
     this.websocketClient = null
+    this.running = false
   }
 
   async start() {
     if (await this.checkAuth()) {
       this.websocketClient = this.startWebSocketClient()
+      this.running = true
     }
   }
+
+  async stop() {
+    if (this.websocketClient) {
+      this.websocketClient.close()
+      this.websocketClient = null
+      this.websocketSessionID = null
+    }
+    this.running = false
+  }
+
+  async sendChatMessage(chatMessage: string) {
+    let response = await fetch('https://api.twitch.tv/helix/chat/messages', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + this.oauthToken,
+        'Client-Id': this.clientID,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        broadcaster_id: this.channelOwnerUserID,
+        sender_id: this.botUserID,
+        message: chatMessage
+      })
+    })
+  
+    if (response.status != 200) {
+      let data = await response.json()
+      console.error('Failed to send chat message')
+      console.error(data)
+    } else {
+      console.log('Sent chat message: ' + chatMessage)
+    }
+  }  
 
   private async checkAuth() {
     // https://dev.twitch.tv/docs/authentication/validate-tokens/#how-to-validate-a-token
@@ -50,18 +86,34 @@ export class TwitchChatBot {
   }
 
   private startWebSocketClient() {
-    let websocketClient = new WebSocket(EVENTSUB_WEBSOCKET_URL)
+    let websocketClient = new WebSocket(EVENTSUB_WEBSOCKET_URL, {timeout: 5000, sessionTimeout: 5000})
   
     websocketClient.on('error', console.error)
   
+    let interval: null | NodeJS.Timeout = null
+
     websocketClient.on('open', () => {
       console.log('WebSocket connection opened to ' + EVENTSUB_WEBSOCKET_URL)
+
+      interval = setInterval(() => {
+        websocketClient.ping()
+      }, 5000)
     })
   
     websocketClient.on('message', (data) => {
       this.handleWebSocketMessage(JSON.parse(data.toString()))
     })
-  
+
+    websocketClient.on('close', (code, reason) => {
+      console.log(`WebSocket connection closed: ${code}, ${reason}`)
+      if (interval != null) {
+        clearInterval(interval)
+      }
+      if (this.running) {
+        this.start()
+      }
+    })
+
     return websocketClient
   }
   
@@ -91,6 +143,11 @@ export class TwitchChatBot {
   
             break
         }
+        break
+      case 'session_keepalive':
+        break
+      default:
+        console.log('unhandled', data.metadata.message_type)
         break
     }
   }
@@ -129,28 +186,4 @@ export class TwitchChatBot {
       console.log(`Subscribed to channel.chat.message [${data.data[0].id}]`)
     }
   }
-
-  private async sendChatMessage(chatMessage: string) {
-    let response = await fetch('https://api.twitch.tv/helix/chat/messages', {
-      method: 'POST',
-      headers: {
-        'Authorization': 'Bearer ' + this.oauthToken,
-        'Client-Id': this.clientID,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        broadcaster_id: this.channelOwnerUserID,
-        sender_id: this.botUserID,
-        message: chatMessage
-      })
-    })
-  
-    if (response.status != 200) {
-      let data = await response.json()
-      console.error('Failed to send chat message')
-      console.error(data)
-    } else {
-      console.log('Sent chat message: ' + chatMessage)
-    }
-  }  
 }
