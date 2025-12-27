@@ -3,6 +3,30 @@ import { DatabaseAsyncAwait } from '../db'
 
 const EVENTSUB_WEBSOCKET_URL = 'wss://eventsub.wss.twitch.tv/ws'
 
+export interface ChatMessage {
+  chatter_user_login: string
+  chatter_user_name: string
+  text: string
+}
+
+export interface ChatMessageEffect {
+  claim?: boolean
+}
+
+export class TwitchChatBotPlugin {
+  async onStreamerChatMessage(message: ChatMessage): Promise<ChatMessageEffect> {
+    return {}
+  }
+
+  async onOwnChatMessage(message: ChatMessage): Promise<ChatMessageEffect> {
+    return {}
+  }
+
+  async onChatMessage(message: ChatMessage): Promise<ChatMessageEffect> {
+    return {}
+  }
+}
+
 export class TwitchChatBot {
   private db: DatabaseAsyncAwait
   private oauthToken: string
@@ -12,6 +36,7 @@ export class TwitchChatBot {
   private websocketClient: null | WebSocket
   private websocketSessionID: null | string
   private running: boolean
+  private plugins: TwitchChatBotPlugin[]
 
   constructor({db, oauthToken, clientID, channelOwnerUserID, botUserID} : {db: DatabaseAsyncAwait, oauthToken: string, clientID: string, channelOwnerUserID: string, botUserID: string}) {
     this.db = db
@@ -22,6 +47,20 @@ export class TwitchChatBot {
     this.websocketSessionID = null
     this.websocketClient = null
     this.running = false
+    this.plugins = []
+  }
+
+  addPlugin(plugin: TwitchChatBotPlugin, front: boolean = false) {
+    this.removePlugin(plugin)
+    if (front) {
+      this.plugins.unshift(plugin)
+    } else {
+      this.plugins.push(plugin)
+    }
+  }
+
+  removePlugin(plugin: TwitchChatBotPlugin) {
+    this.plugins = this.plugins.filter(existing => existing != plugin)
   }
 
   async start() {
@@ -62,7 +101,7 @@ export class TwitchChatBot {
     } else {
       console.log('Sent chat message: ' + chatMessage)
     }
-  }  
+  }
 
   private async checkAuth() {
     // https://dev.twitch.tv/docs/authentication/validate-tokens/#how-to-validate-a-token
@@ -117,7 +156,7 @@ export class TwitchChatBot {
     return websocketClient
   }
   
-  private handleWebSocketMessage(data: any) {
+  private async handleWebSocketMessage(data: any) {
     switch (data.metadata.message_type) {
       // After connecting, 'session_welcome' is received.
       case 'session_welcome':
@@ -127,20 +166,42 @@ export class TwitchChatBot {
       case 'notification':
         switch (data.metadata.subscription_type) {
           case 'channel.chat.message':
-            (async () => {
+            const message: ChatMessage = {
+              chatter_user_login: data.payload.event.chatter_user_login,
+              chatter_user_name: data.payload.event.chatter_user_name,
+              text: data.payload.event.message.text,
+            }
+
+            console.log(`MSG #${data.payload.event.broadcaster_user_login} <${data.payload.event.chatter_user_login}> ${message.text}`)
+
+            for (const plugin of this.plugins) {
+              try {
+                let effect
+                if (data.payload.event.broadcaster_user_id == data.payload.event.chatter_user_id) {
+                  effect = await plugin.onStreamerChatMessage(message)
+                } else if (data.payload.event.chatter_user_id == this.botUserID) {
+                  effect = await plugin.onOwnChatMessage(message)
+                } else {
+                  effect = await plugin.onChatMessage(message)
+                }
+                if (effect.claim) {
+                  break
+                }
+              } catch (err) {
+                console.error(err)
+              }
+            }
+
+            {(async () => {
               await this.db.run_async(
                 `INSERT INTO chats(timestamp, username, message, payload) VALUES(?,?,?,?)`,
                 new Date().toISOString(),
-                data.payload.event.chatter_user_login,
-                data.payload.event.message.text,
+                message.chatter_user_login,
+                message.text,
                 JSON.stringify(data.payload),
               )
-            })()
-            
-            console.log(`MSG #${data.payload.event.broadcaster_user_login} <${data.payload.event.chatter_user_login}> ${data.payload.event.message.text}`)
+            })()}
 
-            // okay, do something great!
-  
             break
         }
         break

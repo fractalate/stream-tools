@@ -6,6 +6,8 @@ import setUpDatabase from './db'
 import setUpApi from './routes/api'
 import setUpSocket from './socket'
 import { TwitchChatBot } from './chat'
+import { PluginReflectionsOfMadness } from './plugins/reflections_of_madness'
+import { GreeterPlugin } from './plugins/greeter'
 
 dotenv.config()
 
@@ -47,6 +49,8 @@ async function main() {
       channelOwnerUserID: TWITCH_CHAT_BOT_CHANNEL_OWNER_ID,
       botUserID: TWITCH_CHAT_BOT_USER_ID,
     })
+    bot.addPlugin(new GreeterPlugin(bot, db))
+    bot.addPlugin(new PluginReflectionsOfMadness())
     bot.start()
   } else {
     console.log('Not starting chat bot. Environment variables are missing.')

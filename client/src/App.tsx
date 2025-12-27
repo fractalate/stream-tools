@@ -13,7 +13,7 @@ const router = createBrowserRouter([
     path: "/overlay/ticker",
     element: <TickerOverlayPage />,
   },
-]);
+])
 
 export default function App() {
   useEffect(() => {
