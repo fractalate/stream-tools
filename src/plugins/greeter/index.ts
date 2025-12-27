@@ -1,7 +1,7 @@
 import { ChatMessage, ChatMessageEffect, TwitchChatBot, TwitchChatBotPlugin } from "../../chat"
 import { DatabaseAsyncAwait } from "../../db"
 
-const DEBUG_GREETER_PLUGIN = false
+const DEBUG_GREETER_PLUGIN = true
 const HOURS_BETWEEN_STREAMS = 6
 
 interface ChatMessageDisposition {
@@ -22,7 +22,12 @@ export class GreeterPlugin extends TwitchChatBotPlugin {
 
   async onStreamerChatMessage(message: ChatMessage): Promise<ChatMessageEffect> {
     if (DEBUG_GREETER_PLUGIN) {
-      return this.onChatMessage(message)
+      // const greeting = await this.getFirstThisStreamGreeting({
+      //   ...message,
+      //   chatter_user_login: 'polynomialpossum',
+      // })
+      const greeting = await this.getFirstGreeting(message)
+      this.bot.sendChatMessage(greeting)
     }
     return {}
   }
@@ -38,15 +43,6 @@ export class GreeterPlugin extends TwitchChatBotPlugin {
       this.bot.sendChatMessage(greeting)
     }
 
-    if (DEBUG_GREETER_PLUGIN) {
-      // const greeting = await this.getFirstThisStreamGreeting({
-      //   ...message,
-      //   chatter_user_login: 'polynomialpossum',
-      // })
-      const greeting = await this.getFirstGreeting(message)
-      this.bot.sendChatMessage(greeting)
-    }
-
     return {}
   }
 
@@ -56,7 +52,7 @@ export class GreeterPlugin extends TwitchChatBotPlugin {
 
   private async getFirstThisStreamGreeting(message: ChatMessage): Promise<string> {
     const greeting_object: any = await this.db.get_async(`
-      SELECT greeting FROM greetings WHERE user_login = ?
+      SELECT greeting FROM greetings WHERE username = ?
     `, [message.chatter_user_login])
 
     if (!greeting_object) {

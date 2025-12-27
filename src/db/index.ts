@@ -59,7 +59,6 @@ async function createTables(db: DatabaseAsyncAwait) {
 
 async function createTableChats(db: DatabaseAsyncAwait) {
   await createTableChatsVersion1(db)
-  // and future versions...
 }
 
 async function createTableChatsVersion1(db: DatabaseAsyncAwait) {
@@ -78,11 +77,15 @@ async function createTableChatsVersion1(db: DatabaseAsyncAwait) {
 }
 
 async function createTableGreetings(db: DatabaseAsyncAwait) {
+  await createTableGreetingsVersion1(db)
+}
+
+async function createTableGreetingsVersion1(db: DatabaseAsyncAwait) {
   if (await getTableVersion(db, 'greetings') == 0) {
     await db.run_async(`
       CREATE TABLE greetings (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_login TEXT,
+        username TEXT,
         greeting TEXT
       )
     `)
