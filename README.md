@@ -1,6 +1,6 @@
 # Stream Tools
 
-This is a set of A collection of tools and utilities to support live streams.
+This is a collection of tools and utilities to support live streams.
 
 ## Development
 
