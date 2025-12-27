@@ -1,7 +1,7 @@
 import { ChatMessage, ChatMessageEffect, TwitchChatBot, TwitchChatBotPlugin } from "../../chat"
 import { DatabaseAsyncAwait } from "../../db"
 
-const DEBUG_GREETER_PLUGIN = true
+const DEBUG_GREETER_PLUGIN = false
 const HOURS_BETWEEN_STREAMS = 6
 
 interface ChatMessageDisposition {
