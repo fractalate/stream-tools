@@ -8,6 +8,7 @@ import setUpSocket from './socket'
 import { TwitchChatBot } from './chat'
 import { PluginReflectionsOfMadness } from './plugins/reflections_of_madness'
 import { GreeterPlugin } from './plugins/greeter'
+import { PointsPlugin } from './plugins/points'
 
 dotenv.config()
 
@@ -50,6 +51,7 @@ async function main() {
       botUserID: TWITCH_CHAT_BOT_USER_ID,
     })
     bot.addPlugin(new GreeterPlugin(bot, db))
+    bot.addPlugin(new PointsPlugin(bot, db))
     bot.addPlugin(new PluginReflectionsOfMadness())
     bot.start()
   } else {
