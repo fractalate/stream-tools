@@ -55,6 +55,8 @@ async function createTables(db: DatabaseAsyncAwait) {
 
   await createTableChats(db)
   await createTableGreetings(db)
+  await createTablePoints(db)
+  await createTablePointEvents(db)
 }
 
 async function createTableChats(db: DatabaseAsyncAwait) {
@@ -90,5 +92,39 @@ async function createTableGreetingsVersion1(db: DatabaseAsyncAwait) {
       )
     `)
     await setTableVersion(db, 'greetings', 1)
+  }
+}
+
+async function createTablePoints(db: DatabaseAsyncAwait) {
+  await createTablePointsVersion1(db)
+}
+
+async function createTablePointsVersion1(db: DatabaseAsyncAwait) {
+  if (await getTableVersion(db, 'points') == 0) {
+    await db.run_async(`
+      CREATE TABLE points (
+        username TEXT PRIMARY KEY,
+        points INTEGER
+      )
+    `)
+    await setTableVersion(db, 'points', 1)
+  }
+}
+
+async function createTablePointEvents(db: DatabaseAsyncAwait) {
+  await createTablePointEventsVersion1(db)
+}
+
+async function createTablePointEventsVersion1(db: DatabaseAsyncAwait) {
+  if (await getTableVersion(db, 'point_events') == 0) {
+    await db.run_async(`
+      CREATE TABLE point_events (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        timestamp TEXT,
+        username TEXT,
+        points INTEGER
+      )
+    `)
+    await setTableVersion(db, 'point_events', 1)
   }
 }
