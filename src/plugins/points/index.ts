@@ -37,7 +37,6 @@ export class PointsPlugin extends TwitchChatBotPlugin {
       const m = /^!points$/.exec(message.text)
       if (m) {
         const username = message.chatter_user_name
-        console.log({ username })
         const points = await this.getPoints(username)
         this.bot.sendChatMessage(`${username} has ${points} point${points == 1 ? "" : "s"}!`)
         return { claim: true }
